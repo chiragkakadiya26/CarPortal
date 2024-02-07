@@ -81,14 +81,19 @@ public class UserServiceImpl implements UserService {
         User user = this.userRepository.findById(uId)
                     .orElseThrow(() -> new UserNotFoundException("Failed to update user with ID: " + uId));
 
-        user.setName(userDto.getName());
-        user.setUsername(userDto.getUsername());
-        user.setEmail(userDto.getEmail());
-        user.setPassword(userDto.getPassword());
+        if(userDto.getName() != null && !userDto.getName().isEmpty()){
+            user.setName(userDto.getName());
+        }
+        if(userDto.getMobileNo() != null && !userDto.getMobileNo().isEmpty()){
+            user.setMobileNo(userDto.getMobileNo());
+        }
+        if(userDto.getBirthDate()  != null){
+            user.setBirthDate(userDto.getBirthDate());
+        }
 
-        User updateUser = this.userRepository.save(user);
+            User updateUser = this.userRepository.save(user);
 
-        return this.modelMapper.map(updateUser,UserDto.class);
+            return this.modelMapper.map(updateUser,UserDto.class);
     }
 
     @Transactional

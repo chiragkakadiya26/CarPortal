@@ -7,12 +7,17 @@ import com.carportal.payload.ResponseApi;
 import com.carportal.payload.UserDto;
 import com.carportal.service.AddressService;
 import com.carportal.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -43,11 +48,11 @@ public class UserController {
         return ResponseEntity.ok(this.userService.getUser(uId));
     }
 
-    @PutMapping("/{uId}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable int uId, @RequestBody UserDto userDto){
+    @PutMapping("/update/{uId}")
+    public ResponseEntity<Object> updateUser(@PathVariable int uId, @Valid @RequestBody UserDto userDto, BindingResult result){
 
-        UserDto updateUser = this.userService.updateUser(uId,userDto);
-        return ResponseEntity.ok(updateUser);
+            UserDto updateUser = this.userService.updateUser(uId,userDto);
+            return ResponseEntity.ok(updateUser);
     }
 
     @DeleteMapping("/{uId}")
