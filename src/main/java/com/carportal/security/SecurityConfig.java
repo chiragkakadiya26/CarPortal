@@ -1,11 +1,13 @@
 package com.carportal.security;
 
+import com.carportal.exception.UserNotFoundException;
 import com.carportal.filter.JwtAuthFilter;
 import com.carportal.filter.JwtAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -68,6 +70,11 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(this.customUserDetailService);
         provider.setPasswordEncoder(passwordEncoder());
+        provider.setPreAuthenticationChecks(user -> {
+            if (user.isEnabled() != true) {
+                throw new DisabledException("User not found");
+            }
+        });
         return provider;
 
     }

@@ -97,6 +97,9 @@ public class UserServiceImpl implements UserService {
         User user = this.userRepository.findById(uId)
                     .orElseThrow(() -> new UserNotFoundException("User not found : " + uId));
 
+        user.setActive(false);
+        this.userRepository.save(user);
+
 //        if(user != null){
 //
 //            List<Address> addressList = addressRepository.findByUser(user);
