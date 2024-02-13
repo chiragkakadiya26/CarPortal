@@ -1,5 +1,6 @@
 package com.carportal.controller;
 
+import com.carportal.exception.PasswordException;
 import com.carportal.model.Address;
 import com.carportal.payload.AdminDto;
 import com.carportal.payload.LoginDto;
@@ -15,6 +16,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,5 +63,21 @@ public class UserController {
         ResponseApi responseApi = new ResponseApi("User Deleted Successfully..", true , null,"Success" );
         responseApi.dateTimeFormatter();
         return new ResponseEntity<>(responseApi,HttpStatus.OK);
+    }
+
+    @PostMapping("/changePassword")
+    public ResponseEntity<?> changePassword( @RequestParam(value = "oldPassword") String oldPassword,
+                                            @RequestParam(value = "newPassword") String newPassword, @RequestParam(value = "cPassword") String cPassword)
+                                            throws PasswordException,Exception {
+
+        try {
+            this.userService.changePassword(oldPassword, newPassword, cPassword);
+            return ResponseEntity.ok("Password changed successfully");
+        } catch (PasswordException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+        }
+
     }
 }

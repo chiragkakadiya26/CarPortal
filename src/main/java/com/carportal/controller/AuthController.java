@@ -6,6 +6,7 @@ import com.carportal.exception.WeakPasswordException;
 import com.carportal.model.RefreshToken;
 import com.carportal.model.User;
 import com.carportal.payload.AdminDto;
+import com.carportal.payload.PasswordResetRequest;
 import com.carportal.payload.RegisterDto;
 import com.carportal.repository.UserRepository;
 import com.carportal.request.JwtRequest;
@@ -13,9 +14,13 @@ import com.carportal.request.JwtResponse;
 import com.carportal.filter.JwtService;
 import com.carportal.request.RefreshTokenRequest;
 import com.carportal.security.CustomUserDetails;
+import com.carportal.service.PasswordResetService;
 import com.carportal.service.RefreshTokenService;
 import com.carportal.service.UserService;
+import com.carportal.utils.EmailUtils;
 import com.carportal.utils.PasswordValidator;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -32,14 +37,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -63,6 +67,10 @@ public class AuthController {
     private ModelMapper modelMapper;
     @Autowired
     private RefreshTokenService refreshTokenService;
+    @Autowired
+    private PasswordResetService passwordResetService;
+    @Autowired
+    private EmailUtils emailUtils;
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> createToken(@RequestBody JwtRequest jwtRequest){
@@ -134,6 +142,53 @@ public class AuthController {
                 .build();
     }
 
+    @PostMapping("/password-reset-request")
+    public ResponseEntity<?> forgotPasswordToken(@RequestBody PasswordResetRequest passwordResetRequest,
+                                                 final HttpServletRequest request) throws MessagingException, UnsupportedEncodingException {
+
+        User user = this.userRepository.findByEmail(passwordResetRequest.getEmail());
+        System.out.println(" find email : "+ user.getEmail());
+
+        String passwordResetUrl = "";
+        if(user != null){
+
+            int min = 1000;
+            int max = 999999;
+            int passwordOtp = (int) (Math.random() * (max - min + 1) + min);
+            String passwordOtpString = String.valueOf(passwordOtp);
+
+            this.passwordResetService.createPasswordResetTokenForUser(user, passwordOtpString);
+            passwordResetUrl = passwordResetEmailLink(user, applicationUrl(request), passwordOtpString);
+        }
+        return ResponseEntity.ok(passwordResetUrl);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resentPassword(@RequestBody PasswordResetRequest passwordResetRequest,
+                                            @RequestParam("token") String token){
+       String tokenVerify =  this.passwordResetService.validatePasswordResetToken(token);
+        if (!tokenVerify.equalsIgnoreCase("valid")) {
+            return new ResponseEntity<>("Invalid token password reset token: " + tokenVerify, HttpStatus.BAD_REQUEST);
+        }
+
+        Optional<User> user = this.passwordResetService.findUserByPasswordToken(token);
+        if (user.isPresent()){
+
+            userService.forgotPassword(user.get(), passwordResetRequest.getNewPassword());
+            return new ResponseEntity<>("Password has been reset successfully", HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>("Invalid password reset token", HttpStatus.BAD_REQUEST);
+    }
+
+    private String passwordResetEmailLink(User user, String applicationUrl,
+                                          String passwordToken) throws MessagingException, UnsupportedEncodingException {
+        String url = applicationUrl+"/api/auth/reset-password?token="+passwordToken;
+        emailUtils.sendPasswordResetVerificationEmail(user,url);
+        log.info("Click the link to reset your password :  {}", url);
+        return url;
+    }
+
     private void doAuthenticate(String email, String password) {
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, password);
@@ -143,6 +198,10 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             throw new BadCredentialsException(" Invalid Username or Password  !!");
         }
+    }
 
+    public String applicationUrl(HttpServletRequest request) {
+        return "http://"+request.getServerName()+":"
+                +request.getServerPort()+request.getContextPath();
     }
 }

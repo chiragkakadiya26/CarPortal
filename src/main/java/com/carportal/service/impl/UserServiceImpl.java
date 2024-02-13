@@ -2,6 +2,7 @@ package com.carportal.service.impl;
 
 import com.carportal.enums.Roles;
 import com.carportal.exception.ExistingUserNameAndEmailException;
+import com.carportal.exception.PasswordException;
 import com.carportal.exception.UserNotFoundException;
 import com.carportal.model.Address;
 import com.carportal.model.User;
@@ -11,12 +12,16 @@ import com.carportal.payload.UserDto;
 import com.carportal.repository.UserRepository;
 import com.carportal.service.UserService;
 import jakarta.transaction.Transactional;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -128,6 +133,29 @@ public class UserServiceImpl implements UserService {
          User adminUser = this.userRepository.save(newUser);
 
         return this.modelMapper.map(adminUser, AdminDto.class);
+    }
+
+    @Override
+    public void changePassword(String oldPassword, String newPassword, String cPassword) {
+
+        User user = this.userRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        if (!newPassword.equals(cPassword)) {
+            throw new PasswordException("New password and confirm password not match");
+        }
+
+        if(!passwordEncoder.matches(oldPassword, user.getPassword())){
+            throw new PasswordException("Old password does not match");
+        }else {
+            user.setPassword(this.passwordEncoder.encode(newPassword));
+            this.userRepository.save(user);
+        }
+    }
+
+    @Override
+    public void forgotPassword(User user, String newPassword) {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        this.userRepository.save(user);
     }
 }
 

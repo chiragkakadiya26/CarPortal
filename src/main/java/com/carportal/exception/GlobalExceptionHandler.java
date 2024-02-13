@@ -55,4 +55,11 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<Map<String,String>>(map,HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(PasswordException.class)
+    public ResponseEntity<Object> handelPasswordException(PasswordException exception){
+
+        String errorMessage = exception.getMessage();
+        return new ResponseEntity<>(errorMessage,HttpStatus.BAD_REQUEST);
+    }
 }

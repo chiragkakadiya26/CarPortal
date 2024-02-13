@@ -52,9 +52,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests((athz) -> athz
 //                        .requestMatchers("/users/update")
 //                        .hasAnyRole("USER")
-                        .requestMatchers("/api/users/update/**")
-                        .hasAnyRole("USER")
                         .requestMatchers("/api/users/**")
+                        .hasAnyRole("USER")
+                        .requestMatchers("/api/admin/**")
                         .hasAnyRole("ADMIN")
                         .requestMatchers("/api/auth/**")
                         .permitAll()

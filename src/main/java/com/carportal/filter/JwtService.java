@@ -21,6 +21,7 @@ import java.util.function.Function;
 @Component
 public class JwtService {
 
+//    public static final long JWT_TOKEN_VALIDITY = 50;
     private static final String SECRET_KEY = "b7acf8204b85ab7cec6e73b91f682677d642d328fdec7788e8cbff11ff1a5b22";
 
     public String extractUsername(String jwtToken) {
@@ -33,6 +34,7 @@ public class JwtService {
     }
 
     public String generateJwtToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        extraClaims.put("roles", userDetails.getAuthorities());
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())

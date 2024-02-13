@@ -21,12 +21,14 @@ public class CustomUserDetails implements UserDetails {
     private String password;
     private Roles role;
     private boolean active;
+    private User user;
 
     public CustomUserDetails(User user) {
         this.email = user.getEmail();
         this.password = user.getPassword();
         this.role = user.getRole();
         this.active = user.getActive();
+        this.user = user;
     }
 
     @Override
